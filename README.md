@@ -1,24 +1,51 @@
-test
+# Demo for my OpenAlt 2015 OCI talk
+
+
+## HAProxy setup
+
+Build image and make it avaiable for `runc`:
 
 ```
-for x in `seq 1 3` ; do (while true : ; do curl -s http://192.168.0.11/ >/dev/null ; done)& done
+$ docker build --tag=$USER/haproxy ./haproxy/
+$ sudo mkdir -p /opt/containers/haproxy/rootfs
+$ docker export $(docker create $USER/haproxy) | sudo tar -C /opt/containers/haproxy/rootfs -x
 ```
 
-run haproxy
+Let's create a proper runc container now:
 
 ```
-docker run --rm --net=host haproxy
+$ sudo -c "cd /opt/containers/haproxy && runc spec"
 ```
 
-run nginx
+set args in `config.json` to
 
 ```
-docker build --tag=nginx .
-python run_64_containers.py
+"args": [
+    "haproxy", "-d", "-f", "/ha.cfg"
+],
 ```
 
-run httpd
+Check HAProxy status
 
 ```
-httpd -DFOREGROUND -c "Listen 8000"
+$ firefox http://localhost:1936/
+```
+
+## Spawn httpd containers
+
+```
+$ ./run.py
+```
+
+## Do some requests
+
+
+```
+$ ./bombard.py
+```
+
+Or with curl
+
+```
+for x in `seq 1 3` ; do (while true : ; do curl -s http://localhost/ >/dev/null ; done)& done
 ```
